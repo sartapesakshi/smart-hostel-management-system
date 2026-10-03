@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, render_pager, empty, delete_button %}
+{% block title %}Students{% endblock %}
+{% block heading %}<h1>Students</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="muted">Search, filter and manage every resident.</p>
+  <a class="btn btn-primary" href="{{ url_for('students.add_student') }}">{{ icon('plus', 17) }} Add student</a>
+</div>
+
+<form class="filters card" method="get" action="{{ url_for('students.list_students') }}">
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search name, student ID, phone or email" aria-label="Search students"></div>
+  <select name="course" aria-label="Course"><option value="">All courses</option>
+    {% for c in courses %}<option value="{{ c }}" {% if filters.course == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  <select name="year" aria-label="Year"><option value="">All years</option>
+    {% for y in range(1, 7) %}<option value="{{ y }}" {% if filters.year == y|string %}selected{% endif %}>Year {{ y }}</option>{% endfor %}</select>
+  <select name="room" aria-label="Room"><option value="">All rooms</option><option value="none" {% if filters.room == 'none' %}selected{% endif %}>No room assigned</option>
+    {% for r in rooms %}<option value="{{ r.id }}" {% if filters.room == r.id|string %}selected{% endif %}>Room {{ r.room_no }}</option>{% endfor %}</select>
+  <select name="status" aria-label="Status"><option value="">Any status</option>
+    {% for s in statuses %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  {% if filters.q or filters.course or filters.year or filters.room or filters.status %}<a class="btn btn-ghost" href="{{ url_for('students.list_students') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Student ID</th><th>Name</th><th>Course</th><th>Year</th><th>Room</th><th>Phone</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+      <tbody>
+      {% for s in students %}
+        <tr>
+          <td><span class="code">{{ s.student_code }}</span></td>
+          <td><a class="row-link" href="{{ url_for('students.student_details', student_id=s.id) }}">{{ s.full_name }}</a>
+              <small class="muted block">{{ s.gender }}{% if s|student_age %}, {{ s|student_age }} yrs{% endif %}</small></td>
+          <td>{{ s.course }}</td>
+          <td>{{ s.year or '-' }}</td>
+          <td>{% if s.room_no %}{{ s.room_no }}{% else %}<span class="muted">Unassigned</span>{% endif %}</td>
+          <td>{{ s.phone }}</td>
+          <td>{{ badge(s.status) }}</td>
+          <td class="actions-col">
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('students.student_details', student_id=s.id) }}" title="View details">{{ icon('eye', 15) }}</a>
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('students.edit_student', student_id=s.id) }}" title="Edit">{{ icon('edit', 15) }}</a>
+            {{ delete_button(url_for('students.delete_student', student_id=s.id), 'Delete student ' ~ s.full_name ~ '? Their attendance, complaints and visitor records are deleted too. This cannot be undone.', label='') }}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not students %}{{ empty('No students match your search.' if filters.q or filters.course or filters.year or filters.room or filters.status else 'No students have been added yet.', url_for('students.add_student'), 'Add the first student') }}{% endif %}
+  {{ render_pager(pager) }}
+</div>
+{% endblock %}

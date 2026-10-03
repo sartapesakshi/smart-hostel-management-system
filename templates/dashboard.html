@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, empty %}
+{% block title %}Dashboard{% endblock %}
+{% block heading %}<h1>Dashboard</h1>{% endblock %}
+{% block content %}
+
+<section class="stat-grid" aria-label="Key figures">
+  <a class="stat" href="{{ url_for('students.list_students') }}">
+    <span class="stat-icon c-blue">{{ icon('users', 22) }}</span>
+    <span><span class="stat-value">{{ stats.students }}</span><span class="stat-label">Total students</span>
+    <span class="stat-note">{{ stats.active_students }} active</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('rooms.list_rooms') }}">
+    <span class="stat-icon c-teal">{{ icon('key', 22) }}</span>
+    <span><span class="stat-value">{{ stats.rooms }}</span><span class="stat-label">Total rooms</span>
+    <span class="stat-note">{{ stats.beds }} beds in total</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('rooms.list_rooms') }}">
+    <span class="stat-icon c-navy">{{ icon('bed', 22) }}</span>
+    <span><span class="stat-value">{{ stats.occupied }}</span><span class="stat-label">Occupied beds</span>
+    <span class="stat-note">{{ ((stats.occupied / stats.beds * 100)|round(0)|int) if stats.beds else 0 }}% occupancy</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('rooms.list_rooms', status='Available') }}">
+    <span class="stat-icon c-green">{{ icon('check-circle', 22) }}</span>
+    <span><span class="stat-value">{{ stats.available }}</span><span class="stat-label">Available beds</span>
+    <span class="stat-note">excludes rooms under maintenance</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('fees.payment_history') }}">
+    <span class="stat-icon c-green">{{ icon('wallet', 22) }}</span>
+    <span><span class="stat-value stat-money">{{ stats.collection|inr0 }}</span><span class="stat-label">Total fee collection</span>
+    <span class="stat-note">all payments received</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('fees.list_fees') }}">
+    <span class="stat-icon c-amber">{{ icon('card', 22) }}</span>
+    <span><span class="stat-value stat-money">{{ stats.pending_amount|inr0 }}</span><span class="stat-label">Pending fees</span>
+    <span class="stat-note">{{ stats.pending_count }} unpaid{% if stats.overdue_count %}, {{ stats.overdue_count }} overdue{% endif %}</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('fees.list_fees', status='Paid') }}">
+    <span class="stat-icon c-teal">{{ icon('check', 22) }}</span>
+    <span><span class="stat-value">{{ stats.paid_count }}</span><span class="stat-label">Paid fees</span>
+    <span class="stat-note">fully settled</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('complaints.list_complaints', status='Pending') }}">
+    <span class="stat-icon c-red">{{ icon('alert', 22) }}</span>
+    <span><span class="stat-value">{{ stats.pending_complaints }}</span><span class="stat-label">Pending complaints</span>
+    <span class="stat-note">pending or in progress</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('visitors.list_visitors', scope='today') }}">
+    <span class="stat-icon c-blue">{{ icon('login', 22) }}</span>
+    <span><span class="stat-value">{{ stats.visitors_today }}</span><span class="stat-label">Today's visitors</span>
+    <span class="stat-note">{{ inside|length }} inside now</span></span>
+  </a>
+  <a class="stat" href="{{ url_for('attendance.mark') }}">
+    <span class="stat-icon c-navy">{{ icon('check-square', 22) }}</span>
+    <span><span class="stat-value">{{ stats.att_present }}<span class="stat-split"> / {{ stats.att_absent }}</span></span>
+    <span class="stat-label">Present / absent today</span>
+    <span class="stat-note">{{ stats.att_unmarked }} not marked yet</span></span>
+  </a>
+</section>
+
+<section class="chart-grid" aria-label="Charts">
+  <div class="card"><div class="card-head"><h2>Room occupancy by type</h2></div>
+    <div class="chart-box"><canvas id="chart-occupancy"></canvas></div></div>
+  <div class="card"><div class="card-head"><h2>Fee collection, last 6 months</h2></div>
+    <div class="chart-box"><canvas id="chart-fees"></canvas></div></div>
+  <div class="card"><div class="card-head"><h2>Active students by course</h2></div>
+    <div class="chart-box"><canvas id="chart-courses"></canvas></div></div>
+  <div class="card"><div class="card-head"><h2>Attendance, last 7 days</h2></div>
+    <div class="chart-box"><canvas id="chart-attendance"></canvas></div></div>
+</section>
+
+<section class="grid-3">
+  <div class="card">
+    <div class="card-head"><h2>Complaints needing attention</h2><a href="{{ url_for('complaints.list_complaints') }}">View all</a></div>
+    {% if recent_complaints %}
+    <ul class="plain-list">
+      {% for c in recent_complaints %}
+      <li><a href="{{ url_for('complaints.complaint_details', complaint_id=c.id) }}"><strong>{{ c.category }}</strong>
+        <span class="muted">{{ c.full_name }}</span></a><span>{{ badge(c.priority) }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}{{ empty('No open complaints.') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Overdue fees</h2><a href="{{ url_for('fees.list_fees', status='Overdue') }}">View all</a></div>
+    {% if overdue %}
+    <ul class="plain-list">
+      {% for f in overdue %}
+      <li><a href="{{ url_for('fees.fee_details', fee_id=f.id) }}"><strong>{{ f.student_name }}</strong>
+        <span class="muted">{{ f.fee_type }}, due {{ f.due_date|fmt_date }}</span></a><span class="money">{{ f.balance|inr }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}{{ empty('No overdue fees.') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Visitors inside now</h2><a href="{{ url_for('visitors.list_visitors', scope='today') }}">View all</a></div>
+    {% if inside %}
+    <ul class="plain-list">
+      {% for v in inside %}
+      <li><span><strong>{{ v.visitor_name }}</strong><span class="muted"> visiting {{ v.student_name }}</span></span>
+        <span class="muted">since {{ v.entry_time|fmt_time }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}{{ empty('No visitors inside right now.') }}{% endif %}
+  </div>
+</section>
+
+<script type="application/json" id="chart-data">{{ {'occupancy': occupancy_chart, 'fees': fee_chart, 'courses': course_chart, 'attendance': attendance_chart}|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{# Chart.js is loaded from a CDN. If you are offline, copy chart.umd.min.js to static/js/ (see README). #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" onerror="this.onerror=null;this.src='{{ url_for('static', filename='js/chart.umd.min.js') }}'"></script>
+<script>window.addEventListener('load', function () { if (window.initDashboardCharts) { initDashboardCharts(); } });</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty %}
+{% block title %}Monthly attendance{% endblock %}
+{% block heading %}<h1>Attendance</h1>{% endblock %}
+{% block content %}
+{% include "_attendance_tabs.html" %}
+
+<form class="filters card no-print" method="get" action="{{ url_for('attendance.monthly') }}">
+  <label class="inline-label">Month <input type="month" name="month" value="{{ month }}" required></label>
+  <button class="btn btn-primary" type="submit">Show</button>
+  <button type="button" class="btn btn-secondary" data-print>{{ icon('printer', 16) }} Print</button>
+</form>
+
+<div class="card table-card">
+  <div class="card-head"><h2>{{ title }}</h2><span class="muted"><b class="mark mark-p">P</b> present &nbsp; <b class="mark mark-a">A</b> absent &nbsp; <b class="mark">-</b> not marked</span></div>
+  {% if rows %}
+  <div class="table-wrap"><table class="table grid-table">
+    <thead><tr><th class="sticky-col">Student</th>{% for d in days %}<th class="day">{{ d }}</th>{% endfor %}<th class="num">P</th><th class="num">A</th><th class="num">%</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td class="sticky-col"><a class="row-link" href="{{ url_for('students.student_details', student_id=r.student.id) }}">{{ r.student.full_name }}</a></td>
+      {% for m in r.marks %}<td class="day">{% if m == 'Present' %}<b class="mark mark-p">P</b>{% elif m == 'Absent' %}<b class="mark mark-a">A</b>{% else %}<span class="mark">-</span>{% endif %}</td>{% endfor %}
+      <td class="num">{{ r.present }}</td><td class="num">{{ r.absent }}</td>
+      <td class="num">{% if r.percentage is not none %}<strong class="{{ 'text-bad' if r.percentage < 75 else '' }}">{{ r.percentage }}%</strong>{% else %}-{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}{{ empty('No students to show for this month.') }}{% endif %}
+</div>
+{% endblock %}

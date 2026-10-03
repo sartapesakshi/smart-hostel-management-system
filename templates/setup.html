@@ -1,0 +1,29 @@
+{% extends "auth_base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}First-time setup{% endblock %}
+{% block panel %}
+<div class="auth-card">
+  <h1>Create the administrator account</h1>
+  <p class="muted">No account exists yet. This one-time step creates it; the password is stored hashed, never as plain text.</p>
+  <form method="post" action="{{ url_for('auth.setup') }}" novalidate data-validate>
+    {{ csrf() }}
+    {{ field('Full name', 'full_name', form.get('full_name'), errors, required=True) }}
+    {{ field('Username', 'username', form.get('username'), errors, required=True, help='Letters, numbers, dot or underscore.', attrs='autocomplete="username"') }}
+    {{ field('Email (optional)', 'email', form.get('email'), errors, type='email') }}
+    <div class="field{% if errors.get('password') %} has-error{% endif %}">
+      <label for="password">Password <span class="req">*</span></label>
+      <div class="password-wrap">
+        <input type="password" id="password" name="password" required autocomplete="new-password">
+        <button type="button" class="toggle-password" aria-label="Show password" data-target="password">{{ icon('eye', 18) }}</button>
+      </div>
+      {% if errors.get('password') %}<p class="field-error">{{ errors.password }}</p>{% else %}<p class="field-help">At least 8 characters with a letter and a number.</p>{% endif %}
+    </div>
+    <div class="field{% if errors.get('confirm') %} has-error{% endif %}">
+      <label for="confirm">Confirm password <span class="req">*</span></label>
+      <input type="password" id="confirm" name="confirm" required autocomplete="new-password">
+      {% if errors.get('confirm') %}<p class="field-error">{{ errors.confirm }}</p>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Create account</button>
+  </form>
+</div>
+{% endblock %}

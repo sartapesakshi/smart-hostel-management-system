@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, empty %}
+{% block title %}Attendance{% endblock %}
+{% block heading %}<h1>Attendance</h1>{% endblock %}
+{% block content %}
+{% include "_attendance_tabs.html" %}
+
+<form class="filters card" method="get" action="{{ url_for('attendance.mark') }}">
+  <label class="inline-label">Date <input type="date" name="date" value="{{ day }}" max="{{ today() }}" required></label>
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Find student or room" aria-label="Find student" data-live-filter="#attendance-form"></div>
+  <select name="course" aria-label="Course"><option value="">All courses</option>
+    {% for c in courses %}<option value="{{ c }}" {% if filters.course == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  <button class="btn btn-primary" type="submit">Load</button>
+</form>
+
+<section class="mini-stats">
+  <div class="mini"><strong>{{ counts.active }}</strong><span>Active students</span></div>
+  <div class="mini good"><strong>{{ counts.present }}</strong><span>Present</span></div>
+  <div class="mini bad"><strong>{{ counts.absent }}</strong><span>Absent</span></div>
+  <div class="mini"><strong>{{ not_marked }}</strong><span>Not marked</span></div>
+</section>
+
+<form method="post" action="{{ url_for('attendance.save') }}" class="card table-card" id="attendance-form">
+  {{ csrf() }}
+  <input type="hidden" name="date" value="{{ day }}">
+  <input type="hidden" name="q" value="{{ filters.q }}"><input type="hidden" name="course" value="{{ filters.course }}">
+  <div class="card-head">
+    <h2>{{ day|fmt_date }}</h2>
+    <div class="btn-row">
+      <button type="button" class="btn btn-secondary btn-sm" data-mark-all="Present">Mark all present</button>
+      <button type="button" class="btn btn-secondary btn-sm" data-mark-all="Absent">Mark all absent</button>
+    </div>
+  </div>
+  {% if students %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Student</th><th>Course</th><th>Room</th><th>Attendance</th></tr></thead>
+    <tbody>{% for s in students %}<tr>
+      <td><a class="row-link" href="{{ url_for('students.student_details', student_id=s.id) }}">{{ s.full_name }}</a><small class="muted block">{{ s.student_code }}</small></td>
+      <td>{{ s.course }}</td><td>{{ s.room_no or '-' }}</td>
+      <td><div class="segmented">
+        <label class="seg seg-present"><input type="radio" name="status_{{ s.id }}" value="Present" {% if s.marked == 'Present' %}checked{% endif %}><span>Present</span></label>
+        <label class="seg seg-absent"><input type="radio" name="status_{{ s.id }}" value="Absent" {% if s.marked == 'Absent' %}checked{% endif %}><span>Absent</span></label>
+      </div></td></tr>{% endfor %}</tbody></table></div>
+  <div class="form-actions sticky-actions">
+    <span class="muted">Students left unmarked are not changed. Saving a date again updates the earlier marks.</span>
+    <button type="submit" class="btn btn-primary">{{ icon('check', 17) }} Save attendance</button>
+  </div>
+  {% else %}{{ empty('No active students found.') }}{% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, textarea, info %}
+{% block title %}Profile & settings{% endblock %}
+{% block heading %}<h1>Profile &amp; settings</h1>{% endblock %}
+{% block content %}
+<section class="card profile-head">
+  <span class="avatar avatar-lg">{{ current_user.full_name[:1]|upper }}</span>
+  <div><h2>{{ current_user.full_name }}</h2>
+    <p class="muted">@{{ current_user.username }} &middot; {{ current_user.role }}</p></div>
+</section>
+
+<div class="grid-2 align-start">
+  <section class="card">
+    <div class="card-head"><h2>Profile</h2></div>
+    <dl class="info-grid compact">
+      {{ info('Username', current_user.username) }}
+      {{ info('Account created', current_user.created_at|fmt_datetime) }}
+      {{ info('Last sign-in', current_user.last_login|fmt_datetime if current_user.last_login else '') }}
+      {{ info('Records in system', stats.students ~ ' students') }}
+    </dl>
+    <form method="post" action="{{ url_for('profile.update_profile') }}" novalidate data-validate>
+      {{ csrf() }}
+      <div class="form-grid">
+        {{ field('Full name', 'full_name', profile_data.get('full_name'), profile_errors, required=True, span=2) }}
+        {{ field('Email', 'email', profile_data.get('email'), profile_errors, type='email') }}
+        {{ field('Phone', 'phone', profile_data.get('phone'), profile_errors, type='tel', attrs='data-pattern="phone"') }}
+      </div>
+      <button class="btn btn-primary" type="submit">Save profile</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Change password</h2></div>
+    <form method="post" action="{{ url_for('profile.change_password') }}" novalidate data-validate>
+      {{ csrf() }}
+      {% for name, label, help in [('current_password', 'Current password', ''), ('new_password', 'New password', 'At least 8 characters with a letter and a number.'), ('confirm_password', 'Confirm new password', '')] %}
+      <div class="field{% if password_errors.get(name) %} has-error{% endif %}">
+        <label for="{{ name }}">{{ label }} <span class="req">*</span></label>
+        <div class="password-wrap">
+          <input type="password" id="{{ name }}" name="{{ name }}" required autocomplete="{{ 'current-password' if name == 'current_password' else 'new-password' }}">
+          <button type="button" class="toggle-password" aria-label="Show password" data-target="{{ name }}">{{ icon('eye', 18) }}</button>
+        </div>
+        {% if password_errors.get(name) %}<p class="field-error">{{ password_errors[name] }}</p>{% elif help %}<p class="field-help">{{ help }}</p>{% endif %}
+      </div>
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">Change password</button>
+    </form>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-head"><h2>Hostel settings</h2><span class="muted">Shown on receipts and reports</span></div>
+  <form method="post" action="{{ url_for('profile.update_settings') }}" novalidate data-validate>
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ field('Hostel name', 'hostel_name', settings.get('hostel_name'), settings_errors, required=True) }}
+      {{ field('Hostel phone', 'hostel_phone', settings.get('hostel_phone'), settings_errors, type='tel', attrs='data-pattern="phone"') }}
+      {{ field('Hostel email', 'hostel_email', settings.get('hostel_email'), settings_errors, type='email') }}
+      {{ field('Address', 'hostel_address', settings.get('hostel_address'), settings_errors) }}
+    </div>
+    <button class="btn btn-primary" type="submit">Save settings</button>
+  </form>
+</section>
+{% endblock %}

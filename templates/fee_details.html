@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, info, csrf, field, select, delete_button, empty %}
+{% block title %}Fee FEE-{{ '%04d'|format(fee.id) }}{% endblock %}
+{% block heading %}<h1>Fee details</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('fees.list_fees') }}">{{ icon('arrow-left', 16) }} All fees</a>
+  <div class="btn-row">
+    <a class="btn btn-secondary" href="{{ url_for('fees.edit_fee', fee_id=fee.id) }}">{{ icon('edit', 16) }} Edit</a>
+    {% if fee.paid == 0 %}{{ delete_button(url_for('fees.delete_fee', fee_id=fee.id), 'Delete this fee? This cannot be undone.', 'Delete', small=False) }}{% endif %}
+  </div>
+</div>
+
+<section class="card profile-head">
+  <span class="avatar avatar-lg">{{ icon('card', 26) }}</span>
+  <div><h2>{{ fee.fee_type }} <span class="code">FEE-{{ '%04d'|format(fee.id) }}</span></h2>
+    <p class="muted"><a class="row-link" href="{{ url_for('students.student_details', student_id=fee.student_id) }}">{{ fee.student_name }}</a> ({{ fee.student_code }}) &middot; due {{ fee.due_date|fmt_date }}{% if fee.notes %} &middot; {{ fee.notes }}{% endif %}</p></div>
+  <div class="profile-head-right">{{ badge(fee.status) }}</div>
+</section>
+
+<section class="mini-stats">
+  <div class="mini"><strong>{{ fee.amount|inr }}</strong><span>Amount</span></div>
+  <div class="mini good"><strong>{{ fee.paid|inr }}</strong><span>Paid so far</span></div>
+  <div class="mini warn"><strong>{{ fee.balance|inr }}</strong><span>Balance due</span></div>
+</section>
+
+<div class="grid-2">
+  <section class="card table-card">
+    <div class="card-head"><h2>Payment history</h2></div>
+    {% if payments %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Receipt</th><th>Date</th><th>Method</th><th class="num">Amount</th><th class="actions-col"></th></tr></thead>
+      <tbody>{% for p in payments %}<tr>
+        <td><span class="code">{{ p.receipt_no }}</span>{% if p.transaction_ref %}<small class="muted block">Ref {{ p.transaction_ref }}</small>{% endif %}</td>
+        <td>{{ p.payment_date|fmt_date }}</td><td>{{ p.method }}</td><td class="num">{{ p.amount|inr }}</td>
+        <td class="actions-col"><a class="btn btn-secondary btn-sm" href="{{ url_for('fees.receipt', payment_id=p.id) }}">{{ icon('printer', 15) }} Receipt</a></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}{{ empty('No payments recorded yet.') }}{% endif %}
+  </section>
+
+  <section class="card" id="pay">
+    <div class="card-head"><h2>Record payment</h2></div>
+    {% if fee.balance > 0 %}
+    <form method="post" action="{{ url_for('fees.pay_fee', fee_id=fee.id) }}" novalidate data-validate>
+      {{ csrf() }}
+      <div class="form-grid">
+        {{ field('Amount (Rs)', 'amount', pay_data.get('amount'), pay_errors, type='number', required=True, help='Balance due: ' ~ (fee.balance|inr) ~ '. Enter less for a part-payment.', attrs='min="0.01" step="0.01" max="' ~ fee.balance ~ '"', span=2) }}
+        {{ field('Payment date', 'payment_date', pay_data.get('payment_date'), pay_errors, type='date', required=True, attrs='max="' ~ today() ~ '"') }}
+        {{ select('Method', 'method', methods, pay_data.get('method'), pay_errors, required=True, blank='', attrs='data-ref-toggle="f_transaction_ref"') }}
+        {{ field('Transaction / reference no.', 'transaction_ref', pay_data.get('transaction_ref'), pay_errors, help='Required for UPI, card, bank transfer and cheque.', span=2) }}
+      </div>
+      <button class="btn btn-success btn-block" type="submit">{{ icon('check', 17) }} Record payment</button>
+    </form>
+    {% else %}
+      <p class="muted">This fee is fully paid. {{ icon('check-circle', 16) }}</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

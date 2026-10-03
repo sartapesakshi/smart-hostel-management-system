@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select, textarea %}
+{% block title %}{{ 'Edit room' if room else 'Add room' }}{% endblock %}
+{% block heading %}<h1>{{ 'Edit room ' ~ room.room_no if room else 'Add room' }}</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('rooms.room_details', room_id=room.id) if room else url_for('rooms.list_rooms') }}">{{ icon('arrow-left', 16) }} Back</a>
+</div>
+<form method="post" class="card form-card narrow" novalidate data-validate>
+  {{ csrf() }}
+  <div class="form-grid">
+    {{ field('Room number', 'room_no', data.get('room_no'), errors, required=True, placeholder='e.g. 101', attrs='maxlength="20"') }}
+    {{ field('Floor', 'floor', data.get('floor'), errors, type='number', required=True, help='0 = ground floor.', attrs='min="0" max="50"') }}
+    {{ select('Room type', 'room_type', room_types.keys()|list, data.get('room_type'), errors, required=True, attrs='data-capacity-target="f_capacity"') }}
+    {{ field('Capacity (beds)', 'capacity', data.get('capacity'), errors, type='number', required=True, help='Single 1, Double 2, Triple 3, Dormitory 4 or more.', attrs='min="1" max="50"') }}
+    <div class="field span-2{% if errors.get('under_maintenance') %} has-error{% endif %}">
+      <label class="check"><input type="checkbox" name="under_maintenance" {% if data.get('under_maintenance') %}checked{% endif %}> Room is under maintenance (no new students can be assigned)</label>
+      {% if errors.get('under_maintenance') %}<p class="field-error">{{ errors.under_maintenance }}</p>{% endif %}
+    </div>
+    {{ textarea('Notes', 'notes', data.get('notes'), errors, rows=2, placeholder='Optional: attached bathroom, balcony ...') }}
+  </div>
+  <div class="form-actions">
+    <a class="btn btn-secondary" href="{{ url_for('rooms.room_details', room_id=room.id) if room else url_for('rooms.list_rooms') }}">Cancel</a>
+    <button type="submit" class="btn btn-primary">{{ 'Save changes' if room else 'Add room' }}</button>
+  </div>
+</form>
+{% endblock %}

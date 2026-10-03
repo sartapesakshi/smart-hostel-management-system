@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select %}
+{% block title %}Register visitor{% endblock %}
+{% block heading %}<h1>Register visitor</h1>{% endblock %}
+{% block content %}
+<div class="page-head"><a class="back-link" href="{{ url_for('visitors.list_visitors') }}">{{ icon('arrow-left', 16) }} All visitors</a></div>
+<form method="post" class="card form-card narrow" novalidate data-validate>
+  {{ csrf() }}
+  <div class="form-grid">
+    {{ field('Visitor name', 'visitor_name', data.get('visitor_name'), errors, required=True) }}
+    {{ field('Visitor phone', 'phone', data.get('phone'), errors, type='tel', required=True, attrs='data-pattern="phone"') }}
+    {{ select('Student visited', 'student_id', students|student_pairs, data.get('student_id'), errors, required=True, blank='Choose a student...') }}
+    {{ select('Relationship', 'relationship', relationships, data.get('relationship'), errors, required=True) }}
+    {{ field('Purpose of visit', 'purpose', data.get('purpose'), errors, required=True, span=2, attrs='maxlength="200"') }}
+    {{ field('Visit date', 'visit_date', data.get('visit_date'), errors, type='date', required=True, attrs='max="' ~ today() ~ '"') }}
+    {{ field('Entry time', 'entry_time', data.get('entry_time'), errors, type='time', required=True) }}
+  </div>
+  <div class="form-actions"><a class="btn btn-secondary" href="{{ url_for('visitors.list_visitors') }}">Cancel</a>
+    <button class="btn btn-primary" type="submit">Register visitor</button></div>
+</form>
+{% endblock %}

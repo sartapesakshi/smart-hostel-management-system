@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select %}
+{% block title %}{{ 'Edit staff' if staff else 'Add staff' }}{% endblock %}
+{% block heading %}<h1>{{ 'Edit staff' if staff else 'Add staff' }}</h1>{% endblock %}
+{% block content %}
+<div class="page-head"><a class="back-link" href="{{ url_for('staff.staff_details', staff_id=staff.id) if staff else url_for('staff.list_staff') }}">{{ icon('arrow-left', 16) }} Back</a></div>
+<form method="post" class="card form-card narrow" novalidate data-validate>
+  {{ csrf() }}
+  <div class="form-grid">
+    {{ field('Full name', 'full_name', data.get('full_name'), errors, required=True, span=2) }}
+    {{ select('Role', 'role', roles, data.get('role'), errors, required=True) }}
+    {{ select('Status', 'status', statuses, data.get('status'), errors, required=True, blank='') }}
+    {{ field('Phone', 'phone', data.get('phone'), errors, type='tel', required=True, attrs='data-pattern="phone"') }}
+    {{ field('Email', 'email', data.get('email'), errors, type='email', placeholder='Optional') }}
+    {{ field('Joining date', 'joining_date', data.get('joining_date'), errors, type='date', required=True, attrs='max="' ~ today() ~ '"') }}
+    {{ field('Monthly salary (Rs)', 'salary', data.get('salary'), errors, type='number', required=True, attrs='min="0" step="0.01"') }}
+  </div>
+  <div class="form-actions"><a class="btn btn-secondary" href="{{ url_for('staff.staff_details', staff_id=staff.id) if staff else url_for('staff.list_staff') }}">Cancel</a>
+    <button class="btn btn-primary" type="submit">{{ 'Save changes' if staff else 'Add staff' }}</button></div>
+</form>
+{% endblock %}

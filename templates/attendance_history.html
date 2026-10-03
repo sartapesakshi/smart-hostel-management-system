@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, render_pager, empty %}
+{% block title %}Attendance history{% endblock %}
+{% block heading %}<h1>Attendance</h1>{% endblock %}
+{% block content %}
+{% include "_attendance_tabs.html" %}
+
+<form class="filters card" method="get" action="{{ url_for('attendance.history') }}">
+  <select name="student" aria-label="Student"><option value="">All students</option>
+    {% for s in students %}<option value="{{ s.id }}" {% if filters.student == s.id|string %}selected{% endif %}>{{ s.full_name }} ({{ s.student_code }})</option>{% endfor %}</select>
+  <label class="inline-label">From <input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+  <label class="inline-label">to <input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+  <select name="status" aria-label="Status"><option value="">Present &amp; absent</option>
+    <option value="Present" {% if filters.status == 'Present' %}selected{% endif %}>Present only</option>
+    <option value="Absent" {% if filters.status == 'Absent' %}selected{% endif %}>Absent only</option></select>
+  <button class="btn btn-primary" type="submit">Filter</button>
+</form>
+
+<div class="grid-2 align-start">
+  <section class="card table-card">
+    <div class="card-head"><h2>Student-wise percentage</h2><span class="muted">{{ filters.date_from|fmt_date }} to {{ filters.date_to|fmt_date }}</span></div>
+    {% if summary %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Student</th><th class="num">Present</th><th class="num">Absent</th><th>Attendance</th></tr></thead>
+      <tbody>{% for r in summary %}<tr>
+        <td><a class="row-link" href="{{ url_for('students.student_details', student_id=r.id) }}">{{ r.full_name }}</a><small class="muted block">{{ r.student_code }}</small></td>
+        <td class="num">{{ r.present }}</td><td class="num">{{ r.absent }}</td>
+        <td><div class="pct {{ 'pct-low' if r.percentage < 75 else 'pct-ok' }}"><div class="meter"><span style="width: {{ r.percentage }}%"></span></div><b>{{ r.percentage }}%</b></div></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}{{ empty('No attendance recorded in this period.') }}{% endif %}
+  </section>
+
+  <section class="card table-card">
+    <div class="card-head"><h2>Records</h2></div>
+    {% if records %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Date</th><th>Student</th><th>Course</th><th>Status</th></tr></thead>
+      <tbody>{% for r in records %}<tr><td>{{ r.att_date|fmt_date }}</td>
+        <td><a class="row-link" href="{{ url_for('students.student_details', student_id=r.student_id) }}">{{ r.full_name }}</a></td>
+        <td>{{ r.course }}</td><td>{{ badge(r.status) }}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}{{ empty('No records match your filters.') }}{% endif %}
+    {{ render_pager(pager) }}
+  </section>
+</div>
+{% endblock %}

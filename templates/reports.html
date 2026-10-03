@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block heading %}<h1>Reports</h1>{% endblock %}
+{% block content %}
+<div class="page-head"><p class="muted">Every report reads live data, can be filtered, printed, and exported to CSV or PDF.</p></div>
+<section class="report-grid">
+  {% for slug, r in reports.items() %}
+  <a class="report-card card" href="{{ url_for('reports.show', slug=slug) }}">
+    <span class="stat-icon c-navy">{{ icon('file', 22) }}</span>
+    <h2>{{ r[0] }}</h2>
+    <p class="muted">{{ r[1] }}</p>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

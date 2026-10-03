@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, render_pager, empty, delete_button %}
+{% block title %}Rooms & Beds{% endblock %}
+{% block heading %}<h1>Rooms &amp; beds</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="muted">Occupancy updates automatically when students are assigned or vacated.</p>
+  <a class="btn btn-primary" href="{{ url_for('rooms.add_room') }}">{{ icon('plus', 17) }} Add room</a>
+</div>
+
+<section class="mini-stats">
+  <div class="mini"><strong>{{ totals.rooms }}</strong><span>Rooms</span></div>
+  <div class="mini"><strong>{{ totals.beds }}</strong><span>Total beds</span></div>
+  <div class="mini"><strong>{{ totals.occupied }}</strong><span>Occupied</span></div>
+  <div class="mini"><strong>{{ totals.available }}</strong><span>Available</span></div>
+  <div class="mini"><strong>{{ totals.maintenance }}</strong><span>Under maintenance</span></div>
+</section>
+
+<form class="filters card" method="get" action="{{ url_for('rooms.list_rooms') }}">
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search room number" aria-label="Search rooms"></div>
+  <select name="floor" aria-label="Floor"><option value="">All floors</option>
+    {% for f in floors %}<option value="{{ f }}" {% if filters.floor == f|string %}selected{% endif %}>{{ 'Ground floor' if f == 0 else 'Floor ' ~ f }}</option>{% endfor %}</select>
+  <select name="type" aria-label="Room type"><option value="">All types</option>
+    {% for t in ['Single','Double','Triple','Dormitory'] %}<option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+  <select name="status" aria-label="Status"><option value="">Any status</option>
+    {% for s in statuses %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  {% if filters.q or filters.floor or filters.type or filters.status %}<a class="btn btn-ghost" href="{{ url_for('rooms.list_rooms') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Room</th><th>Floor</th><th>Type</th><th>Occupancy</th><th class="num">Capacity</th><th class="num">Occupied</th><th class="num">Available</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+      <tbody>
+      {% for r in rooms %}
+        <tr>
+          <td><a class="row-link" href="{{ url_for('rooms.room_details', room_id=r.id) }}"><span class="room-tag sm">{{ r.room_no }}</span></a></td>
+          <td>{{ 'Ground' if r.floor == 0 else r.floor }}</td>
+          <td>{{ r.room_type }}</td>
+          <td><div class="meter" title="{{ r.occupied }} of {{ r.capacity }} beds"><span style="width: {{ (r.occupied / r.capacity * 100)|round|int }}%"></span></div></td>
+          <td class="num">{{ r.capacity }}</td><td class="num">{{ r.occupied }}</td><td class="num">{{ r.available }}</td>
+          <td>{{ badge(r.status) }}</td>
+          <td class="actions-col">
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('rooms.room_details', room_id=r.id) }}" title="View room">{{ icon('eye', 15) }}</a>
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('rooms.edit_room', room_id=r.id) }}" title="Edit room">{{ icon('edit', 15) }}</a>
+            {% if r.occupied == 0 %}{{ delete_button(url_for('rooms.delete_room', room_id=r.id), 'Delete room ' ~ r.room_no ~ '? This cannot be undone.', label='') }}{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not rooms %}{{ empty('No rooms match your filters.' if filters.q or filters.floor or filters.type or filters.status else 'No rooms have been added yet.', url_for('rooms.add_room'), 'Add the first room') }}{% endif %}
+  {{ render_pager(pager) }}
+</div>
+{% endblock %}

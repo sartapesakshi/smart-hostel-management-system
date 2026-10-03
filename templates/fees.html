@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, render_pager, empty %}
+{% block title %}Fees{% endblock %}
+{% block heading %}<h1>Fees</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="muted">Totals below follow the current filters.</p>
+  <div class="btn-row">
+    <a class="btn btn-secondary" href="{{ url_for('fees.payment_history') }}">{{ icon('file', 16) }} Payment history</a>
+    <a class="btn btn-primary" href="{{ url_for('fees.add_fee') }}">{{ icon('plus', 17) }} Add fee</a>
+  </div>
+</div>
+
+<section class="mini-stats">
+  <div class="mini"><strong>{{ totals.n }}</strong><span>Fee records</span></div>
+  <div class="mini"><strong>{{ totals.amount|inr }}</strong><span>Total billed</span></div>
+  <div class="mini good"><strong>{{ totals.paid|inr }}</strong><span>Collected</span></div>
+  <div class="mini warn"><strong>{{ totals.balance|inr }}</strong><span>Balance due</span></div>
+</section>
+
+<form class="filters card" method="get" action="{{ url_for('fees.list_fees') }}">
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Student, ID, receipt or transaction no." aria-label="Search fees"></div>
+  <select name="status" aria-label="Status"><option value="">Any status</option>
+    {% for s in statuses %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <select name="fee_type" aria-label="Fee type"><option value="">All fee types</option>
+    {% for t in fee_types %}<option value="{{ t }}" {% if filters.fee_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+  <label class="inline-label">Due from <input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+  <label class="inline-label">to <input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  {% if filters.q or filters.status or filters.fee_type or filters.date_from or filters.date_to or filters.student %}<a class="btn btn-ghost" href="{{ url_for('fees.list_fees') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-card">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Fee ID</th><th>Student</th><th>Fee type</th><th>Due date</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+    <tbody>
+    {% for f in fees %}
+      <tr>
+        <td><span class="code">FEE-{{ '%04d'|format(f.id) }}</span></td>
+        <td><a class="row-link" href="{{ url_for('students.student_details', student_id=f.student_id) }}">{{ f.student_name }}</a><small class="muted block">{{ f.student_code }}</small></td>
+        <td>{{ f.fee_type }}</td>
+        <td>{{ f.due_date|fmt_date }}</td>
+        <td class="num">{{ f.amount|inr }}</td><td class="num">{{ f.paid|inr }}</td><td class="num"><strong>{{ f.balance|inr }}</strong></td>
+        <td>{{ badge(f.status) }}</td>
+        <td class="actions-col">
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('fees.fee_details', fee_id=f.id) }}" title="Details and payments">{{ icon('eye', 15) }}</a>
+          {% if f.status != 'Paid' %}<a class="btn btn-success btn-sm" href="{{ url_for('fees.fee_details', fee_id=f.id) }}#pay" title="Record payment">Pay</a>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% if not fees %}{{ empty('No fees match your filters.' if filters.q or filters.status or filters.fee_type or filters.date_from or filters.date_to else 'No fees have been added yet.', url_for('fees.add_fee'), 'Add a fee') }}{% endif %}
+  {{ render_pager(pager) }}
+</div>
+{% endblock %}

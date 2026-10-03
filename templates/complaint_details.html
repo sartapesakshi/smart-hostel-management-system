@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, info, csrf, select, textarea, delete_button %}
+{% block title %}Complaint CMP-{{ '%04d'|format(c.id) }}{% endblock %}
+{% block heading %}<h1>Complaint details</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('complaints.list_complaints') }}">{{ icon('arrow-left', 16) }} All complaints</a>
+  {{ delete_button(url_for('complaints.delete_complaint', complaint_id=c.id), 'Delete this complaint? This cannot be undone.', 'Delete', small=False) }}
+</div>
+
+<div class="grid-2 align-start">
+  <section class="card">
+    <div class="card-head"><h2>{{ c.category }} <span class="code">CMP-{{ '%04d'|format(c.id) }}</span></h2>{{ badge(c.priority) }}</div>
+    <p class="complaint-text">{{ c.description }}</p>
+    <dl class="info-grid">
+      {{ info('Student', c.full_name ~ ' (' ~ c.student_code ~ ')') }}
+      {{ info('Room', c.room_no) }}
+      {{ info('Phone', c.phone) }}
+      {{ info('Date', c.complaint_date|fmt_date) }}
+      {{ info('Resolved on', c.resolved_date|fmt_date if c.resolved_date else '') }}
+    </dl>
+    {% if c.resolution %}<div class="note"><strong>Resolution</strong><p>{{ c.resolution }}</p></div>{% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Update status</h2>{{ badge(c.status) }}</div>
+    <form method="post" action="{{ url_for('complaints.update_complaint', complaint_id=c.id) }}" novalidate data-validate>
+      {{ csrf() }}
+      <div class="form-grid">
+        {{ select('Status', 'status', statuses, c['status'], errors, required=True, blank='', span=2) }}
+        {{ textarea('Resolution / remarks', 'resolution', c['resolution'], errors, rows=4, placeholder='Required when the complaint is resolved') }}
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Save update</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_pager, empty %}
+{% block title %}Payment history{% endblock %}
+{% block heading %}<h1>Payment history</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('fees.list_fees') }}">{{ icon('arrow-left', 16) }} All fees</a>
+  <span class="muted">Total of the payments shown: <strong>{{ total|inr }}</strong></span>
+</div>
+
+<form class="filters card" method="get" action="{{ url_for('fees.payment_history') }}">
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Student, receipt or transaction no." aria-label="Search payments"></div>
+  <select name="method" aria-label="Method"><option value="">All methods</option>
+    {% for m in methods %}<option value="{{ m }}" {% if filters.method == m %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+  <label class="inline-label">From <input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+  <label class="inline-label">to <input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  {% if filters.q or filters.method or filters.date_from or filters.date_to %}<a class="btn btn-ghost" href="{{ url_for('fees.payment_history') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-card">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Receipt no.</th><th>Date</th><th>Student</th><th>Fee type</th><th>Method</th><th>Reference</th><th class="num">Amount</th><th class="actions-col">Receipt</th></tr></thead>
+    <tbody>{% for p in payments %}<tr>
+      <td><span class="code">{{ p.receipt_no }}</span></td><td>{{ p.payment_date|fmt_date }}</td>
+      <td>{{ p.student_name }}<small class="muted block">{{ p.student_code }}</small></td>
+      <td><a class="row-link" href="{{ url_for('fees.fee_details', fee_id=p.fee_id) }}">{{ p.fee_type }}</a></td>
+      <td>{{ p.method }}</td><td>{{ p.transaction_ref or '-' }}</td><td class="num"><strong>{{ p.amount|inr }}</strong></td>
+      <td class="actions-col"><a class="btn btn-secondary btn-sm" href="{{ url_for('fees.receipt', payment_id=p.id) }}">{{ icon('printer', 15) }}</a></td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if not payments %}{{ empty('No payments match your filters.') }}{% endif %}
+  {{ render_pager(pager) }}
+</div>
+{% endblock %}

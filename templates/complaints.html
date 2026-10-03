@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, render_pager, empty %}
+{% block title %}Complaints{% endblock %}
+{% block heading %}<h1>Complaints</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="muted">High-priority open complaints are listed first.</p>
+  <a class="btn btn-primary" href="{{ url_for('complaints.add_complaint') }}">{{ icon('plus', 17) }} Register complaint</a>
+</div>
+
+<section class="mini-stats">
+  <a class="mini bad" href="{{ url_for('complaints.list_complaints', status='Pending') }}"><strong>{{ counts.get('Pending', 0) }}</strong><span>Pending</span></a>
+  <a class="mini warn" href="{{ url_for('complaints.list_complaints', status='In Progress') }}"><strong>{{ counts.get('In Progress', 0) }}</strong><span>In progress</span></a>
+  <a class="mini good" href="{{ url_for('complaints.list_complaints', status='Resolved') }}"><strong>{{ counts.get('Resolved', 0) }}</strong><span>Resolved</span></a>
+</section>
+
+<form class="filters card" method="get" action="{{ url_for('complaints.list_complaints') }}">
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search student, category or text" aria-label="Search complaints"></div>
+  <select name="status" aria-label="Status"><option value="">Any status</option>
+    {% for s in statuses %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <select name="priority" aria-label="Priority"><option value="">Any priority</option>
+    {% for p in priorities %}<option value="{{ p }}" {% if filters.priority == p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>
+  <select name="category" aria-label="Category"><option value="">All categories</option>
+    {% for c in categories %}<option value="{{ c }}" {% if filters.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  <label class="inline-label">From <input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+  <label class="inline-label">to <input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  {% if filters.q or filters.status or filters.priority or filters.category or filters.date_from or filters.date_to %}<a class="btn btn-ghost" href="{{ url_for('complaints.list_complaints') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-card">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Complaint</th><th>Date</th><th>Priority</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+    <tbody>{% for c in complaints %}<tr>
+      <td><span class="code">CMP-{{ '%04d'|format(c.id) }}</span></td>
+      <td><a class="row-link" href="{{ url_for('students.student_details', student_id=c.student_id) }}">{{ c.full_name }}</a><small class="muted block">{{ c.student_code }}</small></td>
+      <td>{{ c.category }}</td><td class="clip">{{ c.description }}</td><td>{{ c.complaint_date|fmt_date }}</td>
+      <td>{{ badge(c.priority) }}</td><td>{{ badge(c.status) }}</td>
+      <td class="actions-col"><a class="btn btn-secondary btn-sm" href="{{ url_for('complaints.complaint_details', complaint_id=c.id) }}">{{ 'View' if c.status == 'Resolved' else 'Update' }}</a></td></tr>{% endfor %}</tbody></table></div>
+  {% if not complaints %}{{ empty('No complaints match your filters.' if filters.q or filters.status or filters.priority or filters.category or filters.date_from or filters.date_to else 'No complaints have been registered.', url_for('complaints.add_complaint'), 'Register a complaint') }}{% endif %}
+  {{ render_pager(pager) }}
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}<h1>Reports</h1>{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <a class="back-link" href="{{ url_for('reports.index') }}">{{ icon('arrow-left', 16) }} All reports</a>
+  <div class="btn-row">
+    <a class="btn btn-secondary" href="{{ url_with(export='csv') }}">{{ icon('download', 16) }} CSV</a>
+    {% if pdf_available %}<a class="btn btn-secondary" href="{{ url_with(export='pdf') }}">{{ icon('download', 16) }} PDF</a>{% endif %}
+    <button type="button" class="btn btn-primary" data-print>{{ icon('printer', 16) }} Print</button>
+  </div>
+</div>
+
+<form class="filters card no-print" method="get" action="{{ url_for('reports.show', slug=slug) }}">
+  {% for name, label, kind, options in filters %}
+    <label class="inline-label">{{ label }}
+      {% if kind == 'date' %}<input type="date" name="{{ name }}" value="{{ values[name] }}">
+      {% elif kind == 'student' %}
+        <select name="{{ name }}"><option value="">All students</option>
+          {% for s in students %}<option value="{{ s.id }}" {% if values[name] == s.id|string %}selected{% endif %}>{{ s.full_name }} ({{ s.student_code }})</option>{% endfor %}</select>
+      {% else %}
+        <select name="{{ name }}"><option value="">All</option>
+          {% for o in options %}<option value="{{ o }}" {% if values[name] == o|string %}selected{% endif %}>{{ o }}</option>{% endfor %}</select>
+      {% endif %}
+    </label>
+  {% endfor %}
+  <button class="btn btn-primary" type="submit">Apply</button>
+  <a class="btn btn-ghost" href="{{ url_for('reports.show', slug=slug) }}">Reset</a>
+</form>
+
+<article class="card report-sheet">
+  <header class="report-head">
+    <div><h2>{{ title }}</h2><p class="muted">{{ hostel }} &middot; generated {{ today()|fmt_date }}</p></div>
+  </header>
+  <ul class="summary-line">{% for label, value in summary %}<li><span>{{ label }}</span><strong>{{ value }}</strong></li>{% endfor %}</ul>
+  {% if rows %}
+  <div class="table-wrap"><table class="table report-table">
+    <thead><tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+  <p class="muted report-count">{{ rows|length }} row(s)</p>
+  {% else %}
+  <div class="empty"><p>No records match these filters.</p></div>
+  {% endif %}
+</article>
+{% endblock %}

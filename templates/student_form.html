@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select, textarea %}
+{% block title %}{{ 'Edit student' if student else 'Add student' }}{% endblock %}
+{% block heading %}<h1>{{ 'Edit student' if student else 'Add student' }}</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('students.student_details', student_id=student.id) if student else url_for('students.list_students') }}">{{ icon('arrow-left', 16) }} Back</a>
+</div>
+
+{% if errors.get('__all__') %}<div class="alert alert-danger">{{ errors['__all__'] }}</div>{% endif %}
+
+<form method="post" class="card form-card" novalidate data-validate>
+  {{ csrf() }}
+
+  <fieldset>
+    <legend>Personal details</legend>
+    <div class="form-grid">
+      {% if student %}
+        <div class="field"><label>Student ID</label><input type="text" value="{{ student.student_code }}" readonly></div>
+      {% else %}
+        {{ field('Student ID', 'student_code', data.get('student_code'), errors, help='Leave empty to generate one (STU-0001, STU-0002 ...).', attrs='maxlength="20"') }}
+      {% endif %}
+      {{ field('Full name', 'full_name', data.get('full_name'), errors, required=True, attrs='maxlength="100"') }}
+      {{ select('Gender', 'gender', GENDERS, data.get('gender'), errors, required=True) }}
+      {{ field('Date of birth', 'dob', data.get('dob'), errors, type='date', required=True, attrs='max="' ~ today() ~ '" data-age-target="age_preview"') }}
+      <div class="field"><label for="age_preview">Age</label><input type="text" id="age_preview" value="" readonly placeholder="Calculated from date of birth"></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Contact</legend>
+    <div class="form-grid">
+      {{ field('Phone', 'phone', data.get('phone'), errors, type='tel', required=True, placeholder='10-digit mobile number', attrs='data-pattern="phone"') }}
+      {{ field('Email', 'email', data.get('email'), errors, type='email', placeholder='name@example.com (optional)') }}
+      {{ textarea('Address', 'address', data.get('address'), errors, rows=2, placeholder='Permanent address') }}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Parent / guardian</legend>
+    <div class="form-grid">
+      {{ field('Guardian name', 'guardian_name', data.get('guardian_name'), errors, required=True) }}
+      {{ field('Guardian phone', 'guardian_phone', data.get('guardian_phone'), errors, type='tel', required=True, attrs='data-pattern="phone"') }}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Course and hostel</legend>
+    <div class="form-grid">
+      <div class="field{% if errors.get('course') %} has-error{% endif %}">
+        <label for="f_course">Course <span class="req">*</span></label>
+        <input type="text" id="f_course" name="course" list="course-list" value="{{ data.get('course') or '' }}" required placeholder="e.g. MCA" maxlength="50">
+        <datalist id="course-list">{% for c in courses %}<option value="{{ c }}">{% endfor %}</datalist>
+        {% if errors.get('course') %}<p class="field-error">{{ errors.course }}</p>{% endif %}
+      </div>
+      <div class="field{% if errors.get('department') %} has-error{% endif %}">
+        <label for="f_department">Department</label>
+        <input type="text" id="f_department" name="department" list="dept-list" value="{{ data.get('department') or '' }}" maxlength="80">
+        <datalist id="dept-list">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
+        {% if errors.get('department') %}<p class="field-error">{{ errors.department }}</p>{% endif %}
+      </div>
+      {{ select('Year of study', 'year', [(1,'Year 1'),(2,'Year 2'),(3,'Year 3'),(4,'Year 4'),(5,'Year 5'),(6,'Year 6')], data.get('year'), errors, required=True) }}
+      {{ field('Admission date', 'admission_date', data.get('admission_date'), errors, type='date', required=True, attrs='max="' ~ today() ~ '"') }}
+      {{ select('Room', 'room_id', rooms|room_pairs, data.get('room_id'), errors, blank='No room (assign later)', attrs='data-status-source="f_status"') }}
+      {{ select('Status', 'status', statuses, data.get('status'), errors, required=True, blank='') }}
+    </div>
+    <p class="field-help">Only rooms with a free bed are listed. A student who is not Active cannot hold a bed.</p>
+  </fieldset>
+
+  <div class="form-actions">
+    <a class="btn btn-secondary" href="{{ url_for('students.student_details', student_id=student.id) if student else url_for('students.list_students') }}">Cancel</a>
+    <button type="submit" class="btn btn-primary">{{ 'Save changes' if student else 'Add student' }}</button>
+  </div>
+</form>
+{% endblock %}

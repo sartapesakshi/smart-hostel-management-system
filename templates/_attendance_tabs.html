@@ -1,0 +1,5 @@
+<div class="tabs">
+  <a href="{{ url_for('attendance.mark') }}" class="{{ 'active' if request.endpoint == 'attendance.mark' }}">Mark attendance</a>
+  <a href="{{ url_for('attendance.history') }}" class="{{ 'active' if request.endpoint == 'attendance.history' }}">History &amp; percentages</a>
+  <a href="{{ url_for('attendance.monthly') }}" class="{{ 'active' if request.endpoint == 'attendance.monthly' }}">Monthly report</a>
+</div>

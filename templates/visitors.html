@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, render_pager, empty, csrf, delete_button %}
+{% block title %}Visitors{% endblock %}
+{% block heading %}<h1>Visitors</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="tabs flush">
+    <a href="{{ url_for('visitors.list_visitors', scope='today') }}" class="{{ 'active' if filters.scope == 'today' }}">Today</a>
+    <a href="{{ url_for('visitors.list_visitors', status='Inside') }}" class="{{ 'active' if filters.status == 'Inside' and filters.scope != 'today' }}">Inside now</a>
+    <a href="{{ url_for('visitors.list_visitors') }}" class="{{ 'active' if not filters.scope and not filters.status and not filters.q and not filters.date_from and not filters.date_to }}">All history</a>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('visitors.add_visitor') }}">{{ icon('plus', 17) }} Register visitor</a>
+</div>
+
+<section class="mini-stats">
+  <div class="mini"><strong>{{ summary.today }}</strong><span>Visitors today</span></div>
+  <div class="mini warn"><strong>{{ summary.inside }}</strong><span>Inside now</span></div>
+  <div class="mini"><strong>{{ summary.total }}</strong><span>All-time visits</span></div>
+</section>
+
+<form class="filters card" method="get" action="{{ url_for('visitors.list_visitors') }}">
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search visitor, phone or student" aria-label="Search visitors"></div>
+  <select name="student" aria-label="Student"><option value="">All students</option>
+    {% for s in students %}<option value="{{ s.id }}" {% if filters.student == s.id|string %}selected{% endif %}>{{ s.full_name }}</option>{% endfor %}</select>
+  <select name="status" aria-label="Status"><option value="">Inside &amp; exited</option>
+    <option value="Inside" {% if filters.status == 'Inside' %}selected{% endif %}>Inside</option>
+    <option value="Exited" {% if filters.status == 'Exited' %}selected{% endif %}>Exited</option></select>
+  <label class="inline-label">From <input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+  <label class="inline-label">to <input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  <a class="btn btn-ghost" href="{{ url_for('visitors.list_visitors') }}">Clear</a>
+</form>
+
+<div class="card table-card">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>ID</th><th>Visitor</th><th>Visiting</th><th>Purpose</th><th>Date</th><th>Entry</th><th>Exit</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+    <tbody>{% for v in visitors %}<tr>
+      <td><span class="code">VIS-{{ '%04d'|format(v.id) }}</span></td>
+      <td>{{ v.visitor_name }}<small class="muted block">{{ v.relationship }} &middot; {{ v.phone }}</small></td>
+      <td>{{ v.student_name }}<small class="muted block">{{ v.student_code }}</small></td>
+      <td class="clip">{{ v.purpose }}</td><td>{{ v.visit_date|fmt_date }}</td><td>{{ v.entry_time|fmt_time }}</td>
+      <td>{{ v.exit_time|fmt_time if v.exit_time else '-' }}</td><td>{{ badge(v.status) }}</td>
+      <td class="actions-col">
+        {% if not v.exit_time %}
+        <form method="post" action="{{ url_for('visitors.record_exit', visitor_id=v.id) }}" class="exit-form">
+          {{ csrf() }}<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+          <input type="time" name="exit_time" value="{{ now }}" aria-label="Exit time" required>
+          <button class="btn btn-success btn-sm" type="submit">Record exit</button></form>
+        {% endif %}
+        {{ delete_button(url_for('visitors.delete_visitor', visitor_id=v.id), 'Delete this visitor record?', label='') }}
+      </td></tr>{% endfor %}</tbody></table></div>
+  {% if not visitors %}{{ empty('No visitors match your filters.', url_for('visitors.add_visitor'), 'Register a visitor') }}{% endif %}
+  {{ render_pager(pager) }}
+</div>
+{% endblock %}

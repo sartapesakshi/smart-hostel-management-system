@@ -1,0 +1,75 @@
+{% from "_macros.html" import csrf %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} - {{ hostel_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="app">
+
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="{{ url_for('dashboard.index') }}">
+    <span class="brand-mark">{{ icon('building', 22) }}</span>
+    <span class="brand-text"><strong>{{ hostel_name }}</strong><small>Management System</small></span>
+  </a>
+  <nav class="nav" aria-label="Main navigation">
+    {% for bp_name, endpoint, label, icon_name in navigation %}
+      <a href="{{ url_for(endpoint) }}" class="nav-link{% if request.blueprint == bp_name %} active{% endif %}">
+        {{ icon(icon_name, 19) }}<span>{{ label }}</span>
+        {% if bp_name == 'complaints' and open_complaints %}<em class="nav-count">{{ open_complaints }}</em>{% endif %}
+        {% if bp_name == 'visitors' and visitors_inside %}<em class="nav-count">{{ visitors_inside }}</em>{% endif %}
+      </a>
+    {% endfor %}
+  </nav>
+  <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+    {{ csrf() }}
+    <button type="submit" class="nav-link logout">{{ icon('logout', 19) }}<span>Logout</span></button>
+  </form>
+</aside>
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+<div class="main">
+  <header class="topbar">
+    <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Open menu">{{ icon('menu', 22) }}</button>
+    <div class="topbar-title">{% block heading %}{% endblock %}</div>
+    <div class="topbar-right">
+      <span class="topbar-date">{{ icon('calendar', 16) }} <span id="today-label">{{ today() }}</span></span>
+      <a class="user-chip" href="{{ url_for('profile.view') }}" title="Profile & settings">
+        <span class="avatar">{{ current_user.full_name[:1]|upper }}</span>
+        <span class="user-name">{{ current_user.full_name }}<small>{{ current_user.role }}</small></span>
+      </a>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="toasts" id="toasts" aria-live="polite">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="toast toast-{{ category }}" role="status"><span>{{ message }}</span>
+            <button type="button" class="toast-close" aria-label="Dismiss">{{ icon('x', 16) }}</button></div>
+        {% endfor %}
+      {% endwith %}
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">{{ hostel_name }} Management System &middot; MCA Final Year Project</footer>
+</div>
+
+{# confirmation dialog used by every delete button #}
+<div class="modal" id="confirm-modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h3 id="confirm-title">Please confirm</h3>
+    <p id="confirm-message"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="confirm-cancel">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirm-ok">Yes, continue</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

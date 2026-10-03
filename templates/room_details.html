@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, info, csrf, delete_button, empty %}
+{% block title %}Room {{ room.room_no }}{% endblock %}
+{% block heading %}<h1>Room details</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('rooms.list_rooms') }}">{{ icon('arrow-left', 16) }} All rooms</a>
+  <div class="btn-row">
+    <a class="btn btn-secondary" href="{{ url_for('rooms.edit_room', room_id=room.id) }}">{{ icon('edit', 16) }} Edit</a>
+    {% if room.occupied == 0 %}{{ delete_button(url_for('rooms.delete_room', room_id=room.id), 'Delete room ' ~ room.room_no ~ '? This cannot be undone.', 'Delete', small=False) }}{% endif %}
+  </div>
+</div>
+
+<section class="card profile-head">
+  <span class="room-tag lg">{{ room.room_no }}</span>
+  <div><h2>{{ room.room_type }} room</h2>
+    <p class="muted">{{ 'Ground floor' if room.floor == 0 else 'Floor ' ~ room.floor }}{% if room.notes %} &middot; {{ room.notes }}{% endif %}</p></div>
+  <div class="profile-head-right">{{ badge(room.status) }}</div>
+</section>
+
+<section class="mini-stats">
+  <div class="mini"><strong>{{ room.capacity }}</strong><span>Capacity</span></div>
+  <div class="mini"><strong>{{ room.occupied }}</strong><span>Occupied</span></div>
+  <div class="mini"><strong>{{ room.available }}</strong><span>Available</span></div>
+</section>
+
+<div class="grid-2">
+  <section class="card table-card">
+    <div class="card-head"><h2>Residents</h2></div>
+    {% if occupants %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Student</th><th>Course</th><th>Phone</th><th class="actions-col">Action</th></tr></thead>
+      <tbody>{% for s in occupants %}<tr>
+        <td><a class="row-link" href="{{ url_for('students.student_details', student_id=s.id) }}">{{ s.full_name }}</a><small class="muted block">{{ s.student_code }}</small></td>
+        <td>{{ s.course }}{% if s.year %}, Y{{ s.year }}{% endif %}</td><td>{{ s.phone }}</td>
+        <td class="actions-col">
+          <form method="post" action="{{ url_for('rooms.vacate') }}" class="inline-form" data-confirm="Vacate {{ s.full_name }} from room {{ room.room_no }}?">
+            {{ csrf() }}<input type="hidden" name="student_id" value="{{ s.id }}"><input type="hidden" name="next" value="{{ url_for('rooms.room_details', room_id=room.id) }}">
+            <button class="btn btn-danger btn-sm" type="submit">Vacate</button></form>
+        </td></tr>{% endfor %}</tbody></table></div>
+    {% else %}{{ empty('Nobody lives in this room yet.') }}{% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Assign a student</h2></div>
+    {% if room.under_maintenance %}
+      <p class="muted">This room is under maintenance, so beds cannot be assigned.</p>
+    {% elif room.available <= 0 %}
+      <p class="muted">The room is full. Vacate a bed to assign someone else.</p>
+    {% elif candidates %}
+      <p class="muted">{{ room.available }} bed(s) free. Only Active students without a room are listed.</p>
+      <form method="post" action="{{ url_for('rooms.assign') }}" class="inline-assign">
+        {{ csrf() }}<input type="hidden" name="room_id" value="{{ room.id }}"><input type="hidden" name="next" value="{{ url_for('rooms.room_details', room_id=room.id) }}">
+        <select name="student_id" required aria-label="Student"><option value="">Choose a student...</option>
+          {% for s in candidates %}<option value="{{ s.id }}">{{ s.full_name }} ({{ s.student_code }})</option>{% endfor %}</select>
+        <button class="btn btn-primary" type="submit">Assign</button>
+      </form>
+    {% else %}
+      <p class="muted">Every active student already has a bed.</p>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('students.add_student', room=room.id) }}">{{ icon('plus', 15) }} Add a new student to this room</a>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

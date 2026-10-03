@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_macros.html" import info %}
+{% block title %}Receipt {{ payment.receipt_no }}{% endblock %}
+{% block heading %}<h1>Fee receipt</h1>{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <a class="back-link" href="{{ url_for('fees.fee_details', fee_id=fee.id) }}">{{ icon('arrow-left', 16) }} Back to fee</a>
+  <button type="button" class="btn btn-primary" data-print>{{ icon('printer', 17) }} Print receipt</button>
+</div>
+
+<article class="receipt">
+  <header class="receipt-head">
+    <div><h2>{{ settings.hostel_name }}</h2>
+      <p>{{ settings.hostel_address }}{% if settings.hostel_phone %} &middot; {{ settings.hostel_phone }}{% endif %}{% if settings.hostel_email %} &middot; {{ settings.hostel_email }}{% endif %}</p></div>
+    <div class="receipt-no"><span>Receipt no.</span><strong>{{ payment.receipt_no }}</strong><span>{{ payment.payment_date|fmt_date }}</span></div>
+  </header>
+
+  <dl class="receipt-grid">
+    {{ info('Received from', student.full_name) }}
+    {{ info('Student ID', student.student_code) }}
+    {{ info('Course', student.course ~ (', Year ' ~ student.year if student.year else '')) }}
+    {{ info('Room', student.room_no or 'Not assigned') }}
+    {{ info('Fee', fee.fee_type ~ ' (FEE-' ~ ('%04d'|format(fee.id)) ~ ')') }}
+    {{ info('Due date', fee.due_date|fmt_date) }}
+    {{ info('Payment method', payment.method) }}
+    {{ info('Transaction / reference', payment.transaction_ref) }}
+  </dl>
+
+  <table class="receipt-table">
+    <tr><td>Total fee</td><td class="num">{{ fee.amount|inr }}</td></tr>
+    <tr class="receipt-paid"><td>Amount received now</td><td class="num">{{ payment.amount|inr }}</td></tr>
+    <tr><td>Total paid so far</td><td class="num">{{ fee.paid|inr }}</td></tr>
+    <tr><td>Balance due</td><td class="num">{{ fee.balance|inr }}</td></tr>
+  </table>
+  <p class="in-words"><strong>Amount in words:</strong> {{ payment.amount|amount_in_words }}</p>
+
+  <footer class="receipt-foot">
+    <div><span class="sign-line"></span>Received by {{ payment.received_by_name or 'Hostel office' }}</div>
+    <div><span class="sign-line"></span>Student / guardian signature</div>
+  </footer>
+  <p class="receipt-note">This is a computer-generated receipt. Please keep it for your records.</p>
+</article>
+{% endblock %}

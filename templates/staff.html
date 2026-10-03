@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, render_pager, empty, delete_button %}
+{% block title %}Staff{% endblock %}
+{% block heading %}<h1>Staff</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="muted">Monthly payroll for active staff: <strong>{{ payroll|inr }}</strong></p>
+  <a class="btn btn-primary" href="{{ url_for('staff.add_staff') }}">{{ icon('plus', 17) }} Add staff</a>
+</div>
+
+<form class="filters card" method="get" action="{{ url_for('staff.list_staff') }}">
+  <div class="filter-search">{{ icon('search', 17) }}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search name, ID, phone or email" aria-label="Search staff"></div>
+  <select name="role" aria-label="Role"><option value="">All roles</option>
+    {% for r in roles %}<option value="{{ r }}" {% if filters.role == r %}selected{% endif %}>{{ r }}</option>{% endfor %}</select>
+  <select name="status" aria-label="Status"><option value="">Any status</option>
+    {% for s in statuses %}<option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  {% if filters.q or filters.role or filters.status %}<a class="btn btn-ghost" href="{{ url_for('staff.list_staff') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-card">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Staff ID</th><th>Name</th><th>Role</th><th>Phone</th><th>Joined</th><th class="num">Salary</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+    <tbody>{% for s in staff %}<tr>
+      <td><span class="code">{{ s.staff_code }}</span></td>
+      <td><a class="row-link" href="{{ url_for('staff.staff_details', staff_id=s.id) }}">{{ s.full_name }}</a>{% if s.email %}<small class="muted block">{{ s.email }}</small>{% endif %}</td>
+      <td>{{ s.role }}</td><td>{{ s.phone }}</td><td>{{ s.joining_date|fmt_date }}</td><td class="num">{{ s.salary|inr }}</td><td>{{ badge(s.status) }}</td>
+      <td class="actions-col">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('staff.staff_details', staff_id=s.id) }}" title="View">{{ icon('eye', 15) }}</a>
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('staff.edit_staff', staff_id=s.id) }}" title="Edit">{{ icon('edit', 15) }}</a>
+        {{ delete_button(url_for('staff.delete_staff', staff_id=s.id), 'Delete staff member ' ~ s.full_name ~ '? This cannot be undone.', label='') }}
+      </td></tr>{% endfor %}</tbody></table></div>
+  {% if not staff %}{{ empty('No staff match your filters.' if filters.q or filters.role or filters.status else 'No staff have been added yet.', url_for('staff.add_staff'), 'Add staff') }}{% endif %}
+  {{ render_pager(pager) }}
+</div>
+{% endblock %}

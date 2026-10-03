@@ -1,0 +1,83 @@
+{# Reusable template pieces (macros). Imported in other templates with:  {% from "_macros.html" import ... %} #}
+
+{# --- hidden CSRF field: every POST form must contain it --- #}
+{% macro csrf() %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{% endmacro %}
+
+{# --- coloured status label. Text "In Progress" -> CSS class badge-in-progress --- #}
+{% macro badge(text) %}<span class="badge badge-{{ (text or '')|lower|replace(' ', '-') }}">{{ text }}</span>{% endmacro %}
+
+{# --- one text/date/number input with label and error message --- #}
+{% macro field(label, name, value='', errors={}, type='text', required=False, placeholder='', help='', attrs='', span=1) %}
+<div class="field{% if errors.get(name) %} has-error{% endif %}{% if span == 2 %} span-2{% endif %}">
+  <label for="f_{{ name }}">{{ label }}{% if required %} <span class="req" title="required">*</span>{% endif %}</label>
+  <input type="{{ type }}" id="f_{{ name }}" name="{{ name }}" value="{{ value if value is not none else '' }}"
+         placeholder="{{ placeholder }}" {% if required %}required{% endif %} {{ attrs|safe }}>
+  {% if errors.get(name) %}<p class="field-error">{{ errors[name] }}</p>{% elif help %}<p class="field-help">{{ help }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{# --- dropdown. options = list of strings OR list of (value, label) pairs --- #}
+{% macro select(label, name, options, value='', errors={}, required=False, blank='Select...', span=1, attrs='') %}
+<div class="field{% if errors.get(name) %} has-error{% endif %}{% if span == 2 %} span-2{% endif %}">
+  <label for="f_{{ name }}">{{ label }}{% if required %} <span class="req" title="required">*</span>{% endif %}</label>
+  <select id="f_{{ name }}" name="{{ name }}" {% if required %}required{% endif %} {{ attrs|safe }}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for o in options %}
+      {% set v = o[0] if o is not string else o %}{% set l = o[1] if o is not string else o %}
+      <option value="{{ v }}" {% if value|string == v|string %}selected{% endif %}>{{ l }}</option>
+    {% endfor %}
+  </select>
+  {% if errors.get(name) %}<p class="field-error">{{ errors[name] }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{# --- textarea --- #}
+{% macro textarea(label, name, value='', errors={}, required=False, rows=3, placeholder='', span=2) %}
+<div class="field{% if errors.get(name) %} has-error{% endif %}{% if span == 2 %} span-2{% endif %}">
+  <label for="f_{{ name }}">{{ label }}{% if required %} <span class="req" title="required">*</span>{% endif %}</label>
+  <textarea id="f_{{ name }}" name="{{ name }}" rows="{{ rows }}" placeholder="{{ placeholder }}" {% if required %}required{% endif %}>{{ value or '' }}</textarea>
+  {% if errors.get(name) %}<p class="field-error">{{ errors[name] }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{# --- POST button that asks for confirmation first (handled by script.js) --- #}
+{% macro delete_button(url, message, label='Delete', small=True, next_url='') %}
+<form method="post" action="{{ url }}" class="inline-form" data-confirm="{{ message }}">
+  {{ csrf() }}{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+  <button type="submit" class="btn btn-danger{% if small %} btn-sm{% endif %}" title="{{ label or 'Delete' }}" aria-label="{{ label or 'Delete' }}">{{ icon('trash', 15) }}{% if label %} {{ label }}{% endif %}</button>
+</form>
+{% endmacro %}
+
+{# --- pagination bar --- #}
+{% macro render_pager(p) %}
+{% if p.total > 0 %}
+<div class="pager">
+  <span class="pager-info">Showing {{ p.first }}-{{ p.last }} of {{ p.total }}</span>
+  {% if p.pages > 1 %}
+  <nav aria-label="Pages">
+    {% if p.page > 1 %}<a href="{{ url_with(page=p.page - 1) }}">&laquo; Prev</a>{% endif %}
+    {% for n in range(1, p.pages + 1) %}
+      {% if n == 1 or n == p.pages or (n - p.page)|abs <= 1 %}
+        <a href="{{ url_with(page=n) }}" class="{{ 'current' if n == p.page else '' }}">{{ n }}</a>
+      {% elif (n - p.page)|abs == 2 %}<span class="gap">&hellip;</span>{% endif %}
+    {% endfor %}
+    {% if p.page < p.pages %}<a href="{{ url_with(page=p.page + 1) }}">Next &raquo;</a>{% endif %}
+  </nav>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# --- "nothing here yet" row/box --- #}
+{% macro empty(message, action_url='', action_label='') %}
+<div class="empty">
+  {{ icon('file', 32) }}
+  <p>{{ message }}</p>
+  {% if action_url %}<a class="btn btn-primary btn-sm" href="{{ action_url }}">{{ icon('plus', 15) }} {{ action_label }}</a>{% endif %}
+</div>
+{% endmacro %}
+
+{# --- small info row used on detail pages --- #}
+{% macro info(label, value) %}
+<div class="info-item"><dt>{{ label }}</dt><dd>{{ value if value not in (none, '') else '-' }}</dd></div>
+{% endmacro %}

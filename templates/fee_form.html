@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select, textarea %}
+{% block title %}{{ 'Edit fee' if fee else 'Add fee' }}{% endblock %}
+{% block heading %}<h1>{{ 'Edit fee' if fee else 'Add fee' }}</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('fees.fee_details', fee_id=fee.id) if fee else url_for('fees.list_fees') }}">{{ icon('arrow-left', 16) }} Back</a>
+</div>
+{% if errors.get('__all__') %}<div class="alert alert-danger">{{ errors['__all__'] }}</div>{% endif %}
+<form method="post" class="card form-card narrow" novalidate data-validate>
+  {{ csrf() }}
+  <div class="form-grid">
+    {% if fee %}
+      <div class="field span-2"><label>Student</label><input type="text" value="{{ fee.student_name }} ({{ fee.student_code }})" readonly></div>
+    {% else %}
+      {{ select('Student', 'student_id', students|student_pairs, data.get('student_id'), errors, required=True, blank='Choose a student...', span=2) }}
+    {% endif %}
+    {{ select('Fee type', 'fee_type', fee_types, data.get('fee_type'), errors, required=True) }}
+    {{ field('Amount (Rs)', 'amount', data.get('amount'), errors, type='number', required=True, attrs='min="0.01" step="0.01"') }}
+    {{ field('Due date', 'due_date', data.get('due_date'), errors, type='date', required=True) }}
+    {{ textarea('Notes', 'notes', data.get('notes'), errors, rows=2, placeholder='Optional, e.g. "October rent"') }}
+  </div>
+
+  {% if not fee %}
+  <fieldset class="pay-now">
+    <legend>Payment</legend>
+    <label class="check"><input type="checkbox" name="pay_now" id="pay_now" {% if request.form.get('pay_now') %}checked{% endif %}> The full amount is already paid</label>
+    <div class="form-grid pay-now-fields" id="pay-now-fields">
+      {{ field('Payment date', 'payment_date', pay_data.get('payment_date'), pay_errors, type='date', attrs='max="' ~ today() ~ '"') }}
+      {{ select('Payment method', 'method', methods, pay_data.get('method'), pay_errors, blank='', attrs='data-ref-toggle="f_transaction_ref"') }}
+      {{ field('Transaction / reference no.', 'transaction_ref', pay_data.get('transaction_ref'), pay_errors, help='Required for UPI, card, bank transfer and cheque.', span=2) }}
+    </div>
+  </fieldset>
+  {% endif %}
+
+  <div class="form-actions">
+    <a class="btn btn-secondary" href="{{ url_for('fees.fee_details', fee_id=fee.id) if fee else url_for('fees.list_fees') }}">Cancel</a>
+    <button type="submit" class="btn btn-primary">{{ 'Save changes' if fee else 'Add fee' }}</button>
+  </div>
+</form>
+{% endblock %}

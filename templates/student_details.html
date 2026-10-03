@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, info, csrf, delete_button, empty %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block heading %}<h1>Student details</h1>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a class="back-link" href="{{ url_for('students.list_students') }}">{{ icon('arrow-left', 16) }} All students</a>
+  <div class="btn-row">
+    <a class="btn btn-secondary" href="{{ url_for('fees.add_fee', student=student.id) }}">{{ icon('card', 16) }} Add fee</a>
+    <a class="btn btn-secondary" href="{{ url_for('students.edit_student', student_id=student.id) }}">{{ icon('edit', 16) }} Edit</a>
+    {{ delete_button(url_for('students.delete_student', student_id=student.id), 'Delete student ' ~ student.full_name ~ '? Their attendance, complaints and visitor records are deleted too. This cannot be undone.', 'Delete', small=False) }}
+  </div>
+</div>
+
+<section class="card profile-head">
+  <span class="avatar avatar-lg">{{ student.full_name[:1]|upper }}</span>
+  <div>
+    <h2>{{ student.full_name }}</h2>
+    <p class="muted"><span class="code">{{ student.student_code }}</span> &middot; {{ student.course }}{% if student.year %}, Year {{ student.year }}{% endif %}{% if student.department %} &middot; {{ student.department }}{% endif %}</p>
+  </div>
+  <div class="profile-head-right">{{ badge(student.status) }}</div>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Personal and contact</h2></div>
+    <dl class="info-grid">
+      {{ info('Gender', student.gender) }}
+      {{ info('Date of birth', student.dob|fmt_date if student.dob else '') }}
+      {{ info('Age', student|student_age) }}
+      {{ info('Phone', student.phone) }}
+      {{ info('Email', student.email) }}
+      {{ info('Admission date', student.admission_date|fmt_date) }}
+      {{ info('Guardian', student.guardian_name) }}
+      {{ info('Guardian phone', student.guardian_phone) }}
+      {{ info('Address', student.address) }}
+    </dl>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Room</h2></div>
+    {% if student.room_id %}
+      <p class="room-line"><span class="room-tag">{{ student.room_no }}</span>
+        <span>{{ student.room_type }} room, floor {{ student.room_floor }}</span></p>
+      <div class="btn-row">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('rooms.room_details', room_id=student.room_id) }}">View room</a>
+        <form method="post" action="{{ url_for('rooms.vacate') }}" class="inline-form" data-confirm="Vacate {{ student.full_name }} from room {{ student.room_no }}?">
+          {{ csrf() }}<input type="hidden" name="student_id" value="{{ student.id }}">
+          <input type="hidden" name="next" value="{{ url_for('students.student_details', student_id=student.id) }}">
+          <button class="btn btn-danger btn-sm" type="submit">Vacate</button></form>
+      </div>
+    {% elif student.status == 'Active' %}
+      <p class="muted">No bed assigned yet.</p>
+      {% if rooms %}
+      <form method="post" action="{{ url_for('rooms.assign') }}" class="inline-assign">
+        {{ csrf() }}<input type="hidden" name="student_id" value="{{ student.id }}">
+        <input type="hidden" name="next" value="{{ url_for('students.student_details', student_id=student.id) }}">
+        <select name="room_id" required aria-label="Room"><option value="">Choose a room...</option>
+          {% for r in rooms %}<option value="{{ r.id }}">{{ r.room_no }} - {{ r.room_type }} ({{ r.available }} free)</option>{% endfor %}</select>
+        <button class="btn btn-primary" type="submit">Assign room</button>
+      </form>
+      {% else %}<p class="muted">No room has a free bed right now.</p>{% endif %}
+    {% else %}
+      <p class="muted">Students with status {{ student.status }} do not hold a bed.</p>
+    {% endif %}
+
+    <div class="card-head sub"><h2>Attendance</h2><a href="{{ url_for('attendance.history', student=student.id, date_from='2000-01-01') }}">History</a></div>
+    {% if attendance.total %}
+      <p><span class="big-number">{{ percentage }}%</span> <span class="muted">present ({{ attendance.present }} of {{ attendance.total }} days)</span></p>
+      <div class="dots">{% for a in recent_attendance|reverse %}<span class="dot dot-{{ a.status|lower }}" title="{{ a.att_date|fmt_date }}: {{ a.status }}"></span>{% endfor %}</div>
+    {% else %}<p class="muted">No attendance recorded yet.</p>{% endif %}
+  </section>
+</div>
+
+<section class="card table-card">
+  <div class="card-head"><h2>Fees</h2>
+    <span class="muted">Billed {{ fee_totals.amount|inr }} &middot; Paid {{ fee_totals.paid|inr }} &middot; <strong>Balance {{ fee_totals.balance|inr }}</strong></span></div>
+  {% if fees %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Fee</th><th>Due date</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th></tr></thead>
+    <tbody>{% for f in fees %}
+      <tr><td><a class="row-link" href="{{ url_for('fees.fee_details', fee_id=f.id) }}">{{ f.fee_type }}</a></td><td>{{ f.due_date|fmt_date }}</td>
+        <td class="num">{{ f.amount|inr }}</td><td class="num">{{ f.paid|inr }}</td><td class="num">{{ f.balance|inr }}</td><td>{{ badge(f.status) }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% else %}{{ empty('No fees recorded for this student.', url_for('fees.add_fee', student=student.id), 'Add fee') }}{% endif %}
+</section>
+
+<div class="grid-2">
+  <section class="card table-card">
+    <div class="card-head"><h2>Complaints</h2><a href="{{ url_for('complaints.add_complaint', student=student.id) }}">New</a></div>
+    {% if complaints %}<div class="table-wrap"><table class="table">
+      <thead><tr><th>Category</th><th>Date</th><th>Priority</th><th>Status</th></tr></thead>
+      <tbody>{% for c in complaints %}<tr><td><a class="row-link" href="{{ url_for('complaints.complaint_details', complaint_id=c.id) }}">{{ c.category }}</a></td>
+        <td>{{ c.complaint_date|fmt_date }}</td><td>{{ badge(c.priority) }}</td><td>{{ badge(c.status) }}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}{{ empty('No complaints.') }}{% endif %}
+  </section>
+  <section class="card table-card">
+    <div class="card-head"><h2>Visitors</h2><a href="{{ url_for('visitors.add_visitor', student=student.id) }}">Register</a></div>
+    {% if visitors %}<div class="table-wrap"><table class="table">
+      <thead><tr><th>Visitor</th><th>Relation</th><th>Date</th><th>In / Out</th></tr></thead>
+      <tbody>{% for v in visitors %}<tr><td>{{ v.visitor_name }}</td><td>{{ v.relationship }}</td><td>{{ v.visit_date|fmt_date }}</td>
+        <td>{{ v.entry_time|fmt_time }} / {{ v.exit_time|fmt_time if v.exit_time else 'inside' }}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}{{ empty('No visitors.') }}{% endif %}
+  </section>
+</div>
+{% endblock %}

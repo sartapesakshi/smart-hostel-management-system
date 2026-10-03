@@ -1,0 +1,32 @@
+{% extends "auth_base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Sign in{% endblock %}
+{% block panel %}
+<div class="auth-card">
+  <h1>Sign in</h1>
+  <p class="muted">Use your administrator account to manage the hostel.</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}
+  {% endwith %}
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+
+  <form method="post" action="{{ url_for('auth.login') }}" novalidate data-validate>
+    {{ csrf() }}
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" value="{{ username }}" autocomplete="username" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="password-wrap">
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+        <button type="button" class="toggle-password" aria-label="Show password" data-target="password">{{ icon('eye', 18) }}</button>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" name="remember"> Keep me signed in for 7 days</label>
+    <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+  </form>
+</div>
+{% endblock %}
